@@ -9,19 +9,25 @@ app.use(express.json());
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // ======================
-// 🌐 MINI APP STATIC
+// 🔒 SAFE ENV (НОРМАЛЬНЫЙ ПОДХОД)
 // ======================
-app.use("/webapp", express.static(path.join(__dirname, "webapp")));
-
-app.get("/webapp", (req, res) => {
-  res.sendFile(path.join(__dirname, "webapp", "index.html"));
-});
+const BASE_URL = process.env.BASE_URL;
+const PORT = process.env.PORT || 8080;
 
 // ======================
 // 🟢 HEALTH CHECK
 // ======================
 app.get("/", (req, res) => {
   res.status(200).send("Solo Rewards API OK");
+});
+
+// ======================
+// 🌐 MINI APP STATIC
+// ======================
+app.use("/webapp", express.static(path.join(__dirname, "webapp")));
+
+app.get("/webapp", (req, res) => {
+  res.sendFile(path.join(__dirname, "webapp", "index.html"));
 });
 
 // ======================
@@ -34,7 +40,9 @@ bot.start((ctx) => {
         [
           {
             text: "🎁 Открыть приложение",
-            web_app: { url: process.env.WEBAPP_URL },
+            web_app: {
+              url: process.env.WEBAPP_URL || BASE_URL + "/webapp",
+            },
           },
         ],
       ],
@@ -43,7 +51,7 @@ bot.start((ctx) => {
 });
 
 // ======================
-// 🔐 WEBHOOK ENDPOINT
+// 🔐 WEBHOOK
 // ======================
 app.post("/telegram-webhook", async (req, res) => {
   try {
@@ -51,31 +59,28 @@ app.post("/telegram-webhook", async (req, res) => {
     res.sendStatus(200);
   } catch (err) {
     console.error("Webhook error:", err);
-    res.sendStatus(500);
+    res.sendStatus(200);
   }
 });
 
 // ======================
-// 🚀 START SERVER + WEBHOOK
+// 🚀 START SERVER (STABLE VERSION)
 // ======================
-const PORT = process.env.PORT || 8080;
-
 app.listen(PORT, async () => {
+  console.log("Server running on", PORT);
+
   try {
-    console.log("Server running on", PORT);
-
-    const baseUrl = process.env.PUBLIC_URL;
-
-    if (!baseUrl) {
-      throw new Error("PUBLIC_URL is missing in env");
+    if (!BASE_URL) {
+      console.log("⚠️ BASE_URL is not set, webhook skipped");
+      return;
     }
 
-    const webhookUrl = `${baseUrl}/telegram-webhook`;
+    const webhookUrl = `${BASE_URL}/telegram-webhook`;
 
     await bot.telegram.setWebhook(webhookUrl);
 
     console.log("Webhook set:", webhookUrl);
   } catch (e) {
-    console.error("Startup error:", e);
+    console.error("Webhook setup error:", e);
   }
 });
