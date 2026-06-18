@@ -8,18 +8,7 @@ app.use(express.json());
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// ======================
-// 🔒 SAFE ENV (НОРМАЛЬНЫЙ ПОДХОД)
-// ======================
-const BASE_URL = process.env.BASE_URL;
-const PORT = process.env.PORT || 8080;
-
-// ======================
-// 🟢 HEALTH CHECK
-// ======================
-app.get("/", (req, res) => {
-  res.status(200).send("Solo Rewards API OK");
-});
+const WEBAPP_URL = process.env.WEBAPP_URL;
 
 // ======================
 // 🌐 MINI APP STATIC
@@ -40,9 +29,7 @@ bot.start((ctx) => {
         [
           {
             text: "🎁 Открыть приложение",
-            web_app: {
-              url: process.env.WEBAPP_URL || BASE_URL + "/webapp",
-            },
+            web_app: { url: WEBAPP_URL },
           },
         ],
       ],
@@ -51,36 +38,37 @@ bot.start((ctx) => {
 });
 
 // ======================
-// 🔐 WEBHOOK
+// 🔐 WEBHOOK ENDPOINT
 // ======================
 app.post("/telegram-webhook", async (req, res) => {
   try {
     await bot.handleUpdate(req.body);
     res.sendStatus(200);
-  } catch (err) {
-    console.error("Webhook error:", err);
-    res.sendStatus(200);
+  } catch (e) {
+    console.error("Webhook error:", e);
+    res.sendStatus(500);
   }
 });
 
 // ======================
-// 🚀 START SERVER (STABLE VERSION)
+// 🟢 HEALTH CHECK
 // ======================
+app.get("/", (req, res) => {
+  res.send("Solo Rewards API OK");
+});
+
+// ======================
+// 🚀 START SERVER
+// ======================
+const PORT = process.env.PORT || 8080;
+
 app.listen(PORT, async () => {
   console.log("Server running on", PORT);
 
-  try {
-    if (!BASE_URL) {
-      console.log("⚠️ BASE_URL is not set, webhook skipped");
-      return;
-    }
+  // webhook setup
+  const url = `${process.env.PUBLIC_URL}/telegram-webhook`;
 
-    const webhookUrl = `${BASE_URL}/telegram-webhook`;
+  await bot.telegram.setWebhook(url);
 
-    await bot.telegram.setWebhook(webhookUrl);
-
-    console.log("Webhook set:", webhookUrl);
-  } catch (e) {
-    console.error("Webhook setup error:", e);
-  }
+  console.log("Webhook set:", url);
 });
