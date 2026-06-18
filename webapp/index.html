@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solo Rewards</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+body { background:#0f1115; color:white; font-family:Arial; margin:0; }
+.header { padding:15px; font-size:18px; background:#151923; }
+.card { margin:15px; padding:15px; background:#1b1f2a; border-radius:12px; }
+button { width:100%; padding:12px; border:none; border-radius:10px; background:#4caf50; color:white; }
+.balance { color:gold; }
+</style>
+</head>
+
+<body>
+
+<div class="header">🚀 Solo Rewards</div>
+
+<div class="card balance" id="balance">💰 Баланс: ...</div>
+
+<div class="card">
+📢 Задание 1
+<button onclick="check('solo1')">Выполнить</button>
+</div>
+
+<div class="card">
+💬 Чат
+<button onclick="check('chat')">Выполнить</button>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+const user = tg.initDataUnsafe.user;
+
+const BASE_URL = ""; // ⚠️ ВАЖНО: теперь НЕ localhost
+
+async function loadBalance() {
+  const res = await fetch(`/balance?user_id=${user.id}`);
+  const data = await res.json();
+  document.getElementById("balance").innerText = "💰 Баланс: " + data.coins;
+}
+
+async function check(task) {
+  const res = await fetch(`/check-task`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      user_id: user.id,
+      task
+    })
+  });
+
+  const data = await res.json();
+  alert(data.message);
+  loadBalance();
+}
+
+loadBalance();
+</script>
+
+</body>
+</html>
