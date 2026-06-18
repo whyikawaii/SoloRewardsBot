@@ -8,8 +8,6 @@ app.use(express.json());
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-const WEBAPP_URL = process.env.WEBAPP_URL;
-
 // ======================
 // 🌐 MINI APP STATIC
 // ======================
@@ -17,6 +15,13 @@ app.use("/webapp", express.static(path.join(__dirname, "webapp")));
 
 app.get("/webapp", (req, res) => {
   res.sendFile(path.join(__dirname, "webapp", "index.html"));
+});
+
+// ======================
+// 🟢 HEALTH CHECK
+// ======================
+app.get("/", (req, res) => {
+  res.status(200).send("Solo Rewards API OK");
 });
 
 // ======================
@@ -29,7 +34,7 @@ bot.start((ctx) => {
         [
           {
             text: "🎁 Открыть приложение",
-            web_app: { url: WEBAPP_URL },
+            web_app: { url: process.env.WEBAPP_URL },
           },
         ],
       ],
@@ -44,31 +49,33 @@ app.post("/telegram-webhook", async (req, res) => {
   try {
     await bot.handleUpdate(req.body);
     res.sendStatus(200);
-  } catch (e) {
-    console.error("Webhook error:", e);
+  } catch (err) {
+    console.error("Webhook error:", err);
     res.sendStatus(500);
   }
 });
 
 // ======================
-// 🟢 HEALTH CHECK
-// ======================
-app.get("/", (req, res) => {
-  res.send("Solo Rewards API OK");
-});
-
-// ======================
-// 🚀 START SERVER
+// 🚀 START SERVER + WEBHOOK
 // ======================
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, async () => {
-  console.log("Server running on", PORT);
+  try {
+    console.log("Server running on", PORT);
 
-  // webhook setup
-  const url = `${process.env.PUBLIC_URL}/telegram-webhook`;
+    const baseUrl = process.env.PUBLIC_URL;
 
-  await bot.telegram.setWebhook(url);
+    if (!baseUrl) {
+      throw new Error("PUBLIC_URL is missing in env");
+    }
 
-  console.log("Webhook set:", url);
+    const webhookUrl = `${baseUrl}/telegram-webhook`;
+
+    await bot.telegram.setWebhook(webhookUrl);
+
+    console.log("Webhook set:", webhookUrl);
+  } catch (e) {
+    console.error("Startup error:", e);
+  }
 });
