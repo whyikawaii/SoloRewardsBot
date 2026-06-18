@@ -1,35 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Solo Rewards</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-body{margin:0;font-family:system-ui;background:#0f172a;color:#fff}
-.wrap{max-width:420px;margin:auto;padding:20px}
-.card{background:#1e293b;border-radius:24px;padding:20px;margin-bottom:16px}
-.balance{font-size:52px;font-weight:700}
-.btn{width:100%;padding:14px;border:none;border-radius:14px;font-size:16px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solo Rewards</title>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--tg-theme-bg-color, #0f0f0f);
+      color: var(--tg-theme-text-color, #ffffff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    .card {
+      background: var(--tg-theme-secondary-bg-color, #1c1c1c);
+      padding: 20px;
+      border-radius: 16px;
+      text-align: center;
+      width: 80%;
+      max-width: 320px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #2ea6ff;
+      color: white;
+      font-size: 16px;
+    }
+  </style>
 </head>
+
 <body>
-<div class="wrap">
-<div class="card">
-<h1>🏆 Solo Rewards</h1>
-<p>Telegram Mini App</p>
-<div class="balance" id="bal">100</div>
-</div>
-<div class="card">
-<button class="btn" onclick="earn()">Claim +10</button>
-</div>
-</div>
-<script>
-if(window.Telegram?.WebApp){Telegram.WebApp.expand();}
-function earn(){
- const el=document.getElementById('bal');
- el.innerText=Number(el.innerText)+10;
-}
-</script>
+  <div class="card">
+    <h2>🚀 Solo Rewards</h2>
+    <p>Mini App работает</p>
+
+    <button onclick="sendData()">Отправить в бот</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();
+    tg.expand();
+
+    function sendData() {
+      tg.sendData(JSON.stringify({
+        action: "test_click",
+        time: Date.now()
+      }));
+    }
+  </script>
 </body>
 </html>
