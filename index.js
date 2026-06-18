@@ -7,7 +7,7 @@ const {Telegraf}=require("telegraf");
 const app=express();
 const bot=new Telegraf(process.env.BOT_TOKEN);
 
-const WEBAPP_URL=`${process.env.BASE_URL}/webapp`;
+const WEBAPP_URL = "https://solorewardsbot-production.up.railway.app/webapp";
 
 app.use("/webapp",express.static(path.join(__dirname,"webapp")));
 
