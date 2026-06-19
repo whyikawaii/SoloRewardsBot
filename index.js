@@ -10,64 +10,48 @@ app.use(express.json());
 const PORT = process.env.PORT || 8080;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
-// ⚠️ Railway или локалка
-const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
-const WEBAPP_URL = `${BASE_URL}/webapp`;
-
 if (!BOT_TOKEN) {
-  throw new Error("❌ BOT_TOKEN missing in .env");
+  throw new Error("BOT_TOKEN missing");
 }
 
 const bot = new Telegraf(BOT_TOKEN);
 
-// ======================
-// MEMORY DB (временно)
-// ======================
+// --------------------
+// MEMORY DB
+// --------------------
 const users = {};
 
-// ======================
-// HEALTH CHECK
-// ======================
+// --------------------
+// API TEST
+// --------------------
 app.get("/", (req, res) => {
-  res.send("🚀 SoloRewards API OK");
+  res.send("API OK");
 });
 
-// тест маршрута
-app.get("/test", (req, res) => {
-  res.send("OK TEST ROUTE WORKING");
-});
+// --------------------
+// WEBAPP
+// --------------------
+app.use("/webapp", express.static(path.join(__dirname, "webapp")));
 
-// ======================
-// MINI APP (ВАЖНО)
-// ======================
-const webappPath = path.join(__dirname, "webapp");
-
-app.use("/webapp", express.static(webappPath));
-
-app.get("/webapp", (req, res) => {
-  res.sendFile(path.join(webappPath, "index.html"));
-});
-
-// ======================
-// BOT
-// ======================
+// --------------------
+// BOT START
+// --------------------
 bot.start((ctx) => {
   const id = ctx.from.id;
 
   if (!users[id]) {
-    users[id] = {
-      xp: 0,
-      lastClaim: 0,
-    };
+    users[id] = { xp: 0 };
   }
 
-  return ctx.reply("🚀 Solo Rewards", {
+  return ctx.reply("🚀 Solo Rewards работает", {
     reply_markup: {
       inline_keyboard: [
         [
           {
-            text: "🎁 Открыть приложение",
-            web_app: { url: WEBAPP_URL },
+            text: "Открыть приложение",
+            web_app: {
+              url: process.env.WEBAPP_URL || "http://localhost:8080/webapp",
+            },
           },
         ],
       ],
@@ -75,48 +59,31 @@ bot.start((ctx) => {
   });
 });
 
-// ======================
-// CLAIM API
-// ======================
+// --------------------
+// SIMPLE CLAIM (без защиты пока)
+// --------------------
 app.post("/api/claim", (req, res) => {
   const { userId } = req.body;
 
-  if (!userId) {
-    return res.json({ ok: false, error: "No userId" });
-  }
-
   if (!users[userId]) {
-    users[userId] = { xp: 0, lastClaim: 0 };
-  }
-
-  const now = Date.now();
-  const cooldown = 24 * 60 * 60 * 1000;
-
-  if (now - users[userId].lastClaim < cooldown) {
-    return res.json({
-      ok: false,
-      error: "Cooldown",
-    });
+    users[userId] = { xp: 0 };
   }
 
   users[userId].xp += 10;
-  users[userId].lastClaim = now;
 
-  return res.json({
+  res.json({
     ok: true,
     xp: users[userId].xp,
-    gained: 10,
   });
 });
 
-// ======================
+// --------------------
 // START SERVER
-// ======================
+// --------------------
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on ${PORT}`);
-  console.log(`🌐 WebApp: ${WEBAPP_URL}`);
+  console.log("Server running on", PORT);
 });
 
 bot.launch();
 
-console.log("🤖 Bot started");
+console.log("Bot started (polling mode)");
