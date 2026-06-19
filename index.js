@@ -9,38 +9,56 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 8080;
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
+
+// ⚠️ Railway или локалка
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const WEBAPP_URL = `${BASE_URL}/webapp`;
 
-if (!BOT_TOKEN) throw new Error("BOT_TOKEN missing");
+if (!BOT_TOKEN) {
+  throw new Error("❌ BOT_TOKEN missing in .env");
+}
 
 const bot = new Telegraf(BOT_TOKEN);
 
 // ======================
-// MEMORY DB (временная)
+// MEMORY DB (временно)
 // ======================
 const users = {};
 
 // ======================
-// API
+// HEALTH CHECK
 // ======================
 app.get("/", (req, res) => {
-  res.send("Solo Rewards API OK");
+  res.send("🚀 SoloRewards API OK");
+});
+
+// тест маршрута
+app.get("/test", (req, res) => {
+  res.send("OK TEST ROUTE WORKING");
 });
 
 // ======================
-// WEBAPP
+// MINI APP (ВАЖНО)
 // ======================
-app.use("/webapp", express.static(path.join(__dirname, "webapp")));
+const webappPath = path.join(__dirname, "webapp");
+
+app.use("/webapp", express.static(webappPath));
+
+app.get("/webapp", (req, res) => {
+  res.sendFile(path.join(webappPath, "index.html"));
+});
 
 // ======================
-// BOT START
+// BOT
 // ======================
 bot.start((ctx) => {
   const id = ctx.from.id;
 
   if (!users[id]) {
-    users[id] = { xp: 0 };
+    users[id] = {
+      xp: 0,
+      lastClaim: 0,
+    };
   }
 
   return ctx.reply("🚀 Solo Rewards", {
@@ -58,30 +76,47 @@ bot.start((ctx) => {
 });
 
 // ======================
-// WEBAPP DATA
+// CLAIM API
 // ======================
 app.post("/api/claim", (req, res) => {
   const { userId } = req.body;
 
+  if (!userId) {
+    return res.json({ ok: false, error: "No userId" });
+  }
+
   if (!users[userId]) {
-    users[userId] = { xp: 0 };
+    users[userId] = { xp: 0, lastClaim: 0 };
+  }
+
+  const now = Date.now();
+  const cooldown = 24 * 60 * 60 * 1000;
+
+  if (now - users[userId].lastClaim < cooldown) {
+    return res.json({
+      ok: false,
+      error: "Cooldown",
+    });
   }
 
   users[userId].xp += 10;
+  users[userId].lastClaim = now;
 
-  res.json({
+  return res.json({
     ok: true,
     xp: users[userId].xp,
+    gained: 10,
   });
 });
 
 // ======================
-// START
+// START SERVER
 // ======================
 app.listen(PORT, () => {
-  console.log("Server running:", PORT);
+  console.log(`🚀 Server running on ${PORT}`);
+  console.log(`🌐 WebApp: ${WEBAPP_URL}`);
 });
 
 bot.launch();
 
-console.log("Bot started");
+console.log("🤖 Bot started");
