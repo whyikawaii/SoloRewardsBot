@@ -1,0 +1,7 @@
+{
+ "name":"solorewardsbot",
+ "private":true,
+ "type":"commonjs",
+ "scripts":{"start":"node index.js"},
+ "dependencies":{"express":"^4","@prisma/client":"^6"}
+}

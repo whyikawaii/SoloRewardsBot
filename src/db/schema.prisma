@@ -1,0 +1,5 @@
+generator client { provider="prisma-client-js" }
+datasource db { provider="postgresql" url=env("DATABASE_URL") }
+model User{ id Int @id @default(autoincrement()) tgId String @unique xp Int @default(0) level Int @default(1) streak Int @default(0) lastDaily DateTime? referrals Int @default(0) createdAt DateTime @default(now())}
+model Task{ id Int @id @default(autoincrement()) userId Int type String completed Boolean @default(false) createdAt DateTime @default(now())}
+model Referral{ id Int @id @default(autoincrement()) inviterId Int invitedId Int createdAt DateTime @default(now())}

@@ -1,0 +1,1 @@
+exports.calculateLevel=x=>Math.floor(x/100)+1;
