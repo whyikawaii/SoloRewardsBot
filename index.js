@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
 const { Telegraf } = require("telegraf");
@@ -5,37 +7,42 @@ const { Telegraf } = require("telegraf");
 const app = express();
 app.use(express.json());
 
-// ======================
-// 🤖 BOT (ХАРДКОД)
-// ======================
-const bot = new Telegraf("8695065233:AAESdJ3FycIWvRVv9LDmydCh_TMi8PizT6k");
+const PORT = process.env.PORT || 8080;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const BASE_URL = process.env.BASE_URL || "http://localhost:8080";
+const WEBAPP_URL = `${BASE_URL}/webapp`;
+
+if (!BOT_TOKEN) throw new Error("BOT_TOKEN missing");
+
+const bot = new Telegraf(BOT_TOKEN);
 
 // ======================
-// 🌐 LINKS (ХАРДКОД)
+// MEMORY DB (временная)
 // ======================
-const BASE_URL = "https://solorewardsbot-production.up.railway.app";
-const WEBAPP_URL = BASE_URL + "/webapp";
+const users = {};
 
 // ======================
-// 🟢 HEALTH CHECK
+// API
 // ======================
 app.get("/", (req, res) => {
   res.send("Solo Rewards API OK");
 });
 
 // ======================
-// 🌐 MINI APP
+// WEBAPP
 // ======================
 app.use("/webapp", express.static(path.join(__dirname, "webapp")));
 
-app.get("/webapp", (req, res) => {
-  res.sendFile(path.join(__dirname, "webapp", "index.html"));
-});
-
 // ======================
-// 🤖 START COMMAND
+// BOT START
 // ======================
 bot.start((ctx) => {
+  const id = ctx.from.id;
+
+  if (!users[id]) {
+    users[id] = { xp: 0 };
+  }
+
   return ctx.reply("🚀 Solo Rewards", {
     reply_markup: {
       inline_keyboard: [
@@ -51,33 +58,30 @@ bot.start((ctx) => {
 });
 
 // ======================
-// 🔐 WEBHOOK
+// WEBAPP DATA
 // ======================
-app.post("/telegram-webhook", async (req, res) => {
-  try {
-    await bot.handleUpdate(req.body);
-    res.sendStatus(200);
-  } catch (err) {
-    console.error("Webhook error:", err);
-    res.sendStatus(200);
+app.post("/api/claim", (req, res) => {
+  const { userId } = req.body;
+
+  if (!users[userId]) {
+    users[userId] = { xp: 0 };
   }
+
+  users[userId].xp += 10;
+
+  res.json({
+    ok: true,
+    xp: users[userId].xp,
+  });
 });
 
 // ======================
-// 🚀 START SERVER
+// START
 // ======================
-const PORT = 8080;
-
-app.listen(PORT, async () => {
-  console.log("Server running on", PORT);
-
-  try {
-    const webhookUrl = BASE_URL + "/telegram-webhook";
-
-    await bot.telegram.setWebhook(webhookUrl);
-
-    console.log("Webhook set:", webhookUrl);
-  } catch (e) {
-    console.error("Webhook setup error:", e);
-  }
+app.listen(PORT, () => {
+  console.log("Server running:", PORT);
 });
+
+bot.launch();
+
+console.log("Bot started");
